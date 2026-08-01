@@ -435,3 +435,40 @@ func TestDeployBoundary_Deterministic(t *testing.T) {
 		}
 	}
 }
+
+func TestDeployBoundary_NonIAMDeduplicatesWithinAStatement(t *testing.T) {
+	t.Parallel()
+
+	// Pike's real scan output repeats an action within a statement when
+	// multiple attributes on one resource all require it (e.g.
+	// aws_ecs_task_definition's execution_role_arn and task_role_arn
+	// attributes both require ecs:DescribeTaskDefinition-adjacent calls).
+	p := policy.Policy{Statements: []policy.Statement{{
+		Actions:   []string{"ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition", "ecs:DescribeTaskDefinition"},
+		Resources: []string{"*", "*"},
+	}}}
+
+	doc, err := transform.DeployBoundary(p, testConfig())
+	if err != nil {
+		t.Fatalf("DeployBoundary() error = %v", err)
+	}
+
+	var nonIAM []string
+
+	for _, s := range doc.Statements {
+		if s.Sid == "NonIAM0" {
+			nonIAM = s.Action
+		}
+	}
+
+	want := []string{"ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition"}
+	if len(nonIAM) != len(want) {
+		t.Fatalf("NonIAM0 Action = %v, want %v (deduplicated)", nonIAM, want)
+	}
+
+	for i, a := range want {
+		if nonIAM[i] != a {
+			t.Errorf("NonIAM0 Action[%d] = %q, want %q", i, nonIAM[i], a)
+		}
+	}
+}
