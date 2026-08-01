@@ -61,6 +61,38 @@ func TestDeployPolicy_DropsEmptyStatements(t *testing.T) {
 	}
 }
 
+func TestDeployPolicy_DeduplicatesWithinAStatement(t *testing.T) {
+	t.Parallel()
+
+	// Pike's real scan output repeats an action within a statement when
+	// multiple attributes on one resource all require it (e.g. several
+	// attributes on aws_iam_role all requiring iam:GetRole).
+	p := policy.Policy{
+		Statements: []policy.Statement{
+			{Actions: []string{"iam:GetRole", "iam:PassRole", "iam:GetRole", "iam:PassRole"}, Resources: []string{"*", "*"}},
+		},
+	}
+
+	doc := render.DeployPolicy(p)
+
+	if len(doc.Statements) != 1 {
+		t.Fatalf("len(Statements) = %d, want 1", len(doc.Statements))
+	}
+
+	got := doc.Statements[0].Action
+	want := []string{"iam:GetRole", "iam:PassRole"}
+
+	if len(got) != len(want) {
+		t.Fatalf("Action = %v, want %v (deduplicated)", got, want)
+	}
+
+	for i, a := range want {
+		if got[i] != a {
+			t.Errorf("Action[%d] = %q, want %q", i, got[i], a)
+		}
+	}
+}
+
 func TestDeployPolicy_Deterministic(t *testing.T) {
 	t.Parallel()
 
