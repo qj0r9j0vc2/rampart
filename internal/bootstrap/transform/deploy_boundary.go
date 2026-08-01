@@ -251,13 +251,11 @@ func nonIAMStatements(p policy.Policy) []render.Statement {
 			continue
 		}
 
-		sort.Strings(nonIAM)
-
 		statements = append(statements, render.Statement{
 			Sid:      fmt.Sprintf("NonIAM%d", i),
 			Effect:   "Allow",
-			Action:   nonIAM,
-			Resource: sortedCopy(s.Resources),
+			Action:   sortedUnique(nonIAM),
+			Resource: sortedUnique(s.Resources),
 		})
 	}
 
@@ -306,6 +304,29 @@ func policyPathARN(cfg *config.Config, path string) string {
 
 func sortedCopy(s []string) []string {
 	out := append([]string(nil), s...)
+	sort.Strings(out)
+
+	return out
+}
+
+// sortedUnique returns the sorted, deduplicated contents of s. Pike's
+// scan output can list the same action more than once within a
+// statement, and a rendered policy document shouldn't repeat it.
+func sortedUnique(s []string) []string {
+	seen := make(map[string]bool, len(s))
+
+	var out []string
+
+	for _, v := range s {
+		if seen[v] {
+			continue
+		}
+
+		seen[v] = true
+
+		out = append(out, v)
+	}
+
 	sort.Strings(out)
 
 	return out
