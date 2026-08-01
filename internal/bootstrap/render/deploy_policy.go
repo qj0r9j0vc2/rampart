@@ -44,7 +44,7 @@ func DeployPolicy(p policy.Policy) Document {
 	statements := make([]Statement, 0, len(p.Statements))
 
 	for i, s := range p.Statements {
-		actions := sortedCopy(s.Actions)
+		actions := sortedUnique(s.Actions)
 		if len(actions) == 0 {
 			continue
 		}
@@ -53,7 +53,7 @@ func DeployPolicy(p policy.Policy) Document {
 			Sid:      "DeployPolicy" + strconv.Itoa(i),
 			Effect:   "Allow",
 			Action:   actions,
-			Resource: sortedCopy(s.Resources),
+			Resource: sortedUnique(s.Resources),
 		})
 	}
 
@@ -107,6 +107,30 @@ func isIAMOrSTS(action string) bool {
 
 func sortedCopy(s []string) []string {
 	out := append([]string(nil), s...)
+	sort.Strings(out)
+
+	return out
+}
+
+// sortedUnique returns the sorted, deduplicated contents of s. Pike's scan
+// output can list the same action more than once within a statement (e.g.
+// several attributes on one resource all requiring iam:GetRole); a
+// rendered policy document shouldn't repeat it.
+func sortedUnique(s []string) []string {
+	seen := make(map[string]bool, len(s))
+
+	var out []string
+
+	for _, v := range s {
+		if seen[v] {
+			continue
+		}
+
+		seen[v] = true
+
+		out = append(out, v)
+	}
+
 	sort.Strings(out)
 
 	return out
