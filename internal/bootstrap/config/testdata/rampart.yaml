@@ -7,10 +7,10 @@ aws:
 
 principal:
   type: iam-user
-  name: jinu.ahn@bharvest.io-cli
+  name: me@qj0r9j0vc2.me-cli
   mfa:
     required: true
-    serial: arn:aws:iam::123456789012:mfa/jinu.ahn@bharvest.io-cli
+    serial: arn:aws:iam::123456789012:mfa/me@qj0r9j0vc2.me-cli
     max_age_seconds: 3600
 
 deploy_role:
