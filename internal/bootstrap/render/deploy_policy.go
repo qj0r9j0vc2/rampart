@@ -116,13 +116,6 @@ func isIAMOrSTS(action string) bool {
 	return strings.HasPrefix(action, "iam:") || strings.HasPrefix(action, "sts:")
 }
 
-func sortedCopy(s []string) []string {
-	out := append([]string(nil), s...)
-	sort.Strings(out)
-
-	return out
-}
-
 // sortedUnique returns the sorted, deduplicated contents of s. Pike's scan
 // output can list the same action more than once within a statement (e.g.
 // several attributes on one resource all requiring iam:GetRole); a
