@@ -33,7 +33,7 @@ func WorkloadBoundary(cfg *config.Config) (Document, error) {
 		Statements: []Statement{{
 			Sid:      "TerraformWorkloadBoundary",
 			Effect:   "Allow",
-			Action:   sortedCopy(cfg.Policies.WorkloadBoundary.AllowedActions),
+			Action:   sortedUnique(cfg.Policies.WorkloadBoundary.AllowedActions),
 			Resource: []string{"*"},
 		}},
 	}, nil
